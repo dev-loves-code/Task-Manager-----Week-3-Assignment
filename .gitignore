@@ -1,0 +1,54 @@
+# Build folders
+api/bin/
+api/obj/
+api/out/
+api/[Dd]ebug/
+api/[Rr]elease/
+api/x64/
+api/x86/
+api/[Aa][Rr][Mm]/
+
+# Logs
+api/logs/
+api/*.log
+
+# User-specific files
+api/*.user
+api/*.suo
+api/*.userosscache
+api/*.sln.docstates
+api/mono_crash.*
+
+# IDE/editor folders
+api/.vscode/
+api/.idea/
+.vs/                # Visual Studio local folder at root
+
+# OS generated files
+api/.DS_Store
+api/Thumbs.db
+
+# NuGet packages & artifacts
+api/*.nupkg
+api/*.snupkg
+api/packages/
+api/*.nuspec
+api/*.psmdcp
+api/*.jfm
+
+# Environment & secrets
+api/.env
+api/appsettings.Development.json
+api/appsettings.Local.json
+api/secrets.json
+
+# Backup/temporary files
+api/*.bak
+api/*.tmp
+
+# Scaffolding files
+api/ScaffoldingReadMe.txt
+
+# Docker local override files
+docker-compose.override.yml
+docker-compose.override.*.yml
