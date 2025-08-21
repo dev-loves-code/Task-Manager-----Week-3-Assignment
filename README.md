@@ -1,5 +1,3 @@
-
-````markdown
 # Task Manager API
 
 ASP.NET Core 9 REST API for managing tasks and notes (one-to-many) with full CRUD support, Entity Framework Core, Mapster DTO mapping, Redis caching, and Serilog logging.  
@@ -83,6 +81,3 @@ dotnet run
 * MailKit for sending emails
 * QuestPDF for PDF report generation
 * SignalR for real-time notifications
-
-nt, I can also **add a small diagram showing the QueueWeeklyReports → GeneratePdf → SignalR → Email flow**, which makes it very readable for GitHub. Do you want me to do that?
-```
