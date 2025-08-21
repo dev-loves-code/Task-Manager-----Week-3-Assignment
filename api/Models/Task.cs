@@ -13,7 +13,10 @@ namespace api.Models
         public DateTime DueDate { get; set; }
         public bool IsCompleted { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
-        public List<Note> Notes { get; set; } = new List<Note>();// Navigation property to the Note
+        public List<Note> Notes { get; set; } = new List<Note>();
+
+        public string UserId { get; set; }
+        public AppUser User { get; set; }
 
     }
 }

@@ -8,7 +8,7 @@ api/x64/
 api/x86/
 api/[Aa][Rr][Mm]/
 
-# Logs
+# Logsgit
 api/logs/
 api/*.log
 

@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using api.Dtos.Note;
 using api.Interfaces;
 using Mapster;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
@@ -12,6 +14,7 @@ namespace api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class NoteController : ControllerBase
     {
         private readonly INoteService _noteService;
@@ -24,24 +27,46 @@ namespace api.Controllers
         }
 
 
+        private string GetUsername()
+        {
+            var username = User.FindFirst(ClaimTypes.GivenName)?.Value
+                ?? User.FindFirst("given_name")?.Value
+                ?? User.Identity?.Name
+                ?? User.FindFirst(ClaimTypes.Email)?.Value;
+
+            return username;
+        }
+
         [HttpGet("task/{taskId}/notes")]
         public async Task<IActionResult> GetNotesByTaskIdAsync(int taskId)
         {
             _logger.LogInformation("Processing GET request for notes of task {TaskId} from {RequestPath}", taskId, Request.Path);
+
             try
             {
-                var notesDto = await _noteService.GetNotesByTaskIdAsync(taskId);
+                var username = GetUsername();
+                if (string.IsNullOrEmpty(username))
+                {
+                    _logger.LogWarning("Username not found in claims");
+                    return Unauthorized("Unable to determine user identity");
+                }
 
+                var notesDto = await _noteService.GetNotesByTaskIdAsync(taskId, username);
 
-                _logger.LogInformation("Successfully returned {NoteCount} notes for task {TaskId}", notesDto.Count(), taskId);
-
+                _logger.LogInformation("Successfully returned {NoteCount} notes for task {TaskId} by user {Username}",
+                    notesDto.Count(), taskId, username);
 
                 return Ok(notesDto);
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "Unauthorized access attempt for task {TaskId} notes", taskId);
+                return Unauthorized(ex.Message);
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "HTTP request failed for endpoint {Endpoint}", Request.Path);
-                return StatusCode(500, ex.Message);
+                _logger.LogError(ex, "HTTP request failed for endpoint {Endpoint} with TaskId {TaskId}", Request.Path, taskId);
+                return StatusCode(500, "An error occurred while fetching notes.");
             }
         }
 
@@ -59,19 +84,29 @@ namespace api.Controllers
 
             try
             {
-                var createdNoteDto = await _noteService.AddNoteAsync(taskId, noteDto);
+                var username = GetUsername();
+                if (string.IsNullOrEmpty(username))
+                {
+                    _logger.LogWarning("Username not found in claims");
+                    return Unauthorized("Unable to determine user identity");
+                }
 
-                _logger.LogInformation("Successfully added note for task {TaskId}", taskId);
+                var createdNoteDto = await _noteService.AddNoteAsync(taskId, noteDto, username);
 
+                _logger.LogInformation("Successfully added note for task {TaskId} by user {Username}", taskId, username);
 
-                return Created($"tasks/{taskId}/notes", createdNoteDto);
+                return Created($"api/note/task/{taskId}/notes", createdNoteDto);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "Unauthorized access attempt for task {TaskId} note creation", taskId);
+                return Unauthorized(ex.Message);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "HTTP request failed for endpoint {Endpoint} with TaskId {TaskId}", Request.Path, taskId);
-                return StatusCode(500, ex.Message);
+                return StatusCode(500, "An error occurred while creating the note.");
             }
-
         }
 
         [HttpPut("{noteId}")]
@@ -88,42 +123,66 @@ namespace api.Controllers
 
             try
             {
-                var updatedNoteDto = await _noteService.UpdateNoteAsync(noteId, noteDto);
+                var username = GetUsername();
+                if (string.IsNullOrEmpty(username))
+                {
+                    _logger.LogWarning("Username not found in claims");
+                    return Unauthorized("Unable to determine user identity");
+                }
 
-                _logger.LogInformation("Successfully updated note {NoteId}", noteId);
+                var updatedNoteDto = await _noteService.UpdateNoteAsync(noteId, noteDto, username);
+
+                _logger.LogInformation("Successfully updated note {NoteId} by user {Username}", noteId, username);
 
                 return Ok(updatedNoteDto);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "Unauthorized access attempt for note {NoteId} update", noteId);
+                return Unauthorized(ex.Message);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "HTTP request failed for endpoint {Endpoint} with NoteId {NoteId}", Request.Path, noteId);
-                return StatusCode(500, ex.Message);
+                return StatusCode(500, "An error occurred while updating the note.");
             }
-
         }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteNoteAsync(int id)
         {
             _logger.LogInformation("Processing DELETE request for note {NoteId} from {RequestPath}", id, Request.Path);
+
             try
             {
-                var result = await _noteService.DeleteNoteAsync(id);
-                if (result)
+                var username = GetUsername();
+                if (string.IsNullOrEmpty(username))
                 {
-                    _logger.LogInformation("Successfully deleted note {NoteId}", id);
-                    return NoContent();
+                    _logger.LogWarning("Username not found in claims");
+                    return Unauthorized("Unable to determine user identity");
                 }
 
-                _logger.LogWarning("Note {NoteId} not found for deletion, returning 404", id);
-                return NotFound($"Note with ID {id} not found.");
+                var result = await _noteService.DeleteNoteAsync(id, username);
+                if (!result)
+                {
+                    _logger.LogWarning("Note {NoteId} not found for deletion by user {Username}, returning 404", id, username);
+                    return NotFound($"Note with ID {id} not found.");
+                }
+
+                _logger.LogInformation("Successfully deleted note {NoteId} by user {Username}", id, username);
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "Unauthorized access attempt for note {NoteId} deletion", id);
+                return Unauthorized(ex.Message);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "HTTP request failed for endpoint {Endpoint} with NoteId {NoteId}", Request.Path, id);
-                return StatusCode(500, ex.Message);
+                return StatusCode(500, "An error occurred while deleting the note.");
             }
         }
-
 
     }
 }

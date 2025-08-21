@@ -12,6 +12,6 @@ namespace api.Models
         public string Content { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
         public int TaskId { get; set; }
-        public Task? Task { get; set; } // Navigation property to the Task model
+        public Task? Task { get; set; }
     }
 }

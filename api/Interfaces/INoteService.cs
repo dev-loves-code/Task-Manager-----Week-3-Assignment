@@ -9,9 +9,9 @@ namespace api.Interfaces
 {
     public interface INoteService
     {
-        Task<IEnumerable<ResponseNoteDto>> GetNotesByTaskIdAsync(int taskId);
-        Task<ResponseNoteDto> AddNoteAsync(int taskId, NoteDto note);
-        Task<ResponseNoteDto> UpdateNoteAsync(int noteId, NoteDto note);
-        Task<bool> DeleteNoteAsync(int id);
+        Task<IEnumerable<ResponseNoteDto>> GetNotesByTaskIdAsync(int taskId, string username);
+        Task<ResponseNoteDto> AddNoteAsync(int taskId, NoteDto note, string username);
+        Task<ResponseNoteDto> UpdateNoteAsync(int noteId, NoteDto note, string username);
+        Task<bool> DeleteNoteAsync(int id, string username);
     }
 }
